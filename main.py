@@ -1,14 +1,20 @@
-from pandas import DataFrame
+from pandas import DataFrame, concat
 
 import orizonDB
 from HKT import learning
 
 def subtract_dates(data1, data2):
-    ano1, mes1, dia1 = data1.split('/')
-    ano2, mes2, dia2 = data2.split('/')
-    dAno = ano1 - ano2
-    dMes = mes1 - mes2
-    dDia = dia1 - dia2
+    if '-' in data1:
+        ano1, mes1, dia1 = data1.split('-')
+    else:
+        ano1, mes1, dia1 = data1.split('/')
+    if '-' in data2:
+        ano2, mes2, dia2 = data2.split('-')
+    else:
+        ano2, mes2, dia2 = data2.split('/')
+    dAno = int(ano1) - int(ano2)
+    dMes = int(mes1) - int(mes2)
+    dDia = int(dia1) - int(dia2)
     return dDia + 30*dMes + 365*dAno
 
 def get_history(analysisDB, id_):
@@ -24,7 +30,7 @@ def get_history(analysisDB, id_):
     else:
         delta_datas = []
         for i in range(1, len(datas)):
-            delta_datas.append(subtract_dates(datas[i] - datas[i-1]))
+            delta_datas.append(subtract_dates(datas[i], datas[i-1]))
 
         mediana = delta_datas[len(delta_datas)//2 ]
         media = 0
@@ -33,7 +39,7 @@ def get_history(analysisDB, id_):
 
         media /= len(delta_datas)
     data_nascimento = analysisDB['data_nascimento']
-    if data_nascimento is not string:
+    if data_nascimento is not str:
         data_nascimento = data_nascimento.values[0]
     idade = subtract_dates(datas[-1], data_nascimento)
     servicos = historico['servico'].values
@@ -59,7 +65,7 @@ def get_history(analysisDB, id_):
     return DataFrame(data)
 
 def main():
-    mainDB = orizonDB.get_DB()
+    mainDB = orizonDB.get_DB()[:1000]
     relevant_columns = ['id_beneficiario',
                         'carater_atendimento',
                         'valor_item',
@@ -70,7 +76,7 @@ def main():
                         'senha',
                         'servico']
     print("DB separada")
-    analysisDB = mainDB[relevant_columns][:20000]
+    analysisDB = mainDB[relevant_columns]
     size = analysisDB.shape[0]
     analysisDB["carater_atendimento"].replace(["URGENCIA", "ELETIVO"], [1, 0], inplace = True)
     analysisDB["sexo"].replace(["M", "F"], [0, 1], inplace = True)
@@ -123,10 +129,10 @@ def main():
             if lookout_histories.empty or id_beneficiario not in lookout_histories.values[0]:
                 history = get_history(analysisDB, id_beneficiario)
                 history[valor_servico] = 0
-                line = DataFrame([[id, history, valor_servico]], columns = ['id', 'history', 'output'])
-                lookout_histories.append(line)
+                line = DataFrame([[id_beneficiario, history, valor_servico]], columns = ['id', 'history', 'output'])
+                frames = [lookout_histories, line]
+                lookout_histories = concat(frames)
 
-    lookout_histories.sort_values('id')
     print("DB preparada, entrando no ML")
     learning(lookout_histories)
 
