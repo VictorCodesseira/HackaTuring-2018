@@ -1,2 +1,5 @@
 *.dsv
+*.csv
 /CID10CSV
+/.vscode
+/__pycache__

@@ -2,6 +2,7 @@ from pandas import read_csv
 
 def get_DB():
     url = "hackaturing.dsv"
+    # Define o tipo de cada campo
     dtype = {'base_hackaturing.cnpj': str,
             'base_hackaturing.prestador': str,
             'base_hackaturing.uf': str,
@@ -27,7 +28,7 @@ def get_DB():
             'base_hackaturing.ano_mes': str,
             'base_hackaturing.cid': str}
     dataset = read_csv(url, sep = '|', dtype = dtype)
-    new_columns = [old_name[17:] for old_name in dataset.columns]
+    new_columns = [old_name[17:] for old_name in dataset.columns] # Remove "base_hackaturing." dos nomes
     dataset.columns = new_columns
     return dataset
 
