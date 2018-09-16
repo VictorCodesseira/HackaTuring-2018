@@ -1,28 +1,28 @@
-from pandas import DataFrame
-
-import datetime
-
-from sklearn import model_selection
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC
+from pandas import DataFrame, concat
 
 import orizonDB
-# from HKT import learning
+from HKT import learning
 
+def subtract_dates(data1, data2):
+    if '-' in data1:
+        ano1, mes1, dia1 = data1.split('-')
+    else:
+        ano1, mes1, dia1 = data1.split('/')
+    if '-' in data2:
+        ano2, mes2, dia2 = data2.split('-')
+    else:
+        ano2, mes2, dia2 = data2.split('/')
+    dAno = int(ano1) - int(ano2)
+    dMes = int(mes1) - int(mes2)
+    dDia = int(dia1) - int(dia2)
+    return dDia + 30*dMes + 365*dAno
 
 def get_history(analysisDB, id_):
     sexo = analysisDB['sexo'][id_]
     if sexo is not int:
         sexo = sexo.values[0]
     historico = analysisDB.loc[[id_], ['data_item', 'servico', 'carater_atendimento', 'tipo_guia']]
-    datas = [datetime.date.fromisoformat(value.split(' ')[0]) for value in historico['data_item']]
+    datas = [value.split(' ')[0] for value in historico['data_item']]
     datas.sort()
     if len(datas) == 1:
         media = 0
@@ -30,7 +30,7 @@ def get_history(analysisDB, id_):
     else:
         delta_datas = []
         for i in range(1, len(datas)):
-            delta_datas.append((datas[i] - datas[i-1]).days)
+            delta_datas.append(subtract_dates(datas[i], datas[i-1]))
 
         mediana = delta_datas[len(delta_datas)//2 ]
         media = 0
@@ -39,9 +39,9 @@ def get_history(analysisDB, id_):
 
         media /= len(delta_datas)
     data_nascimento = analysisDB['data_nascimento']
-    if data_nascimento is not datetime.datetime:
+    if data_nascimento is not str:
         data_nascimento = data_nascimento.values[0]
-    idade = (datas[-1]- datetime.date.fromisoformat(data_nascimento)).days
+    idade = subtract_dates(datas[-1], data_nascimento)
     servicos = historico['servico'].values
     soma_servicos = [0]*len([value.strip('[,]') for value in servicos[0].split(' ')])
     for servico in servicos:
@@ -65,7 +65,7 @@ def get_history(analysisDB, id_):
     return DataFrame(data)
 
 def main():
-    mainDB = orizonDB.get_DB()
+    mainDB = orizonDB.get_DB()[:1000]
     relevant_columns = ['id_beneficiario',
                         'carater_atendimento',
                         'valor_item',
@@ -76,7 +76,7 @@ def main():
                         'senha',
                         'servico']
     print("DB separada")
-    analysisDB = mainDB[relevant_columns][:20000]
+    analysisDB = mainDB[relevant_columns]
     size = analysisDB.shape[0]
     analysisDB["carater_atendimento"].replace(["URGENCIA", "ELETIVO"], [1, 0], inplace = True)
     analysisDB["sexo"].replace(["M", "F"], [0, 1], inplace = True)
@@ -129,10 +129,10 @@ def main():
             if lookout_histories.empty or id_beneficiario not in lookout_histories.values[0]:
                 history = get_history(analysisDB, id_beneficiario)
                 history[valor_servico] = 0
-                line = DataFrame([[id, history, valor_servico]], columns = ['id', 'history', 'output'])
-                lookout_histories.append(line)
+                line = DataFrame([[id_beneficiario, history, valor_servico]], columns = ['id', 'history', 'output'])
+                frames = [lookout_histories, line]
+                lookout_histories = concat(frames)
 
-    lookout_histories.sort_values('id')
     print("DB preparada, entrando no ML")
     learning(lookout_histories)
 
