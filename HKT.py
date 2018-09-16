@@ -25,7 +25,8 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation
 
 # import clean dataset
-#data = # alguma coisa lendo um vetor de entradas
+#data = # alguma coisa 
+lendo um vetor de entradas
 def learning (dados):
 
 	#input de dados
@@ -36,12 +37,12 @@ def learning (dados):
 	y = len(output)
 
 	model = Sequential([
-	    Dense(x, input_shape=(784,)),
+	    Dense(1, input_shape=(x,)),
 	    Activation('relu'),
 	    Dense(10),
-	    Activation('softmax'),
-	    Dense(y),
 	    Activation('sigmoid'),
+	    Dense(y),
+	    Activation('softmax'),
 	    ])
 
 	# For a multi-class classification problem
@@ -53,7 +54,7 @@ def learning (dados):
 	print("Modelo pronto")
 
 	# Train the model, iterating on the data in batches of 32 samples
-	model.fit(data, output, epochs=3, batch_size=32)
+	model.fit(data, output, epochs=3, batch_size=8)
 
 	print("Modelo terminado")
 	# evaluate the model
