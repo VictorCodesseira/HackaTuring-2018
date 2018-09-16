@@ -1,6 +1,7 @@
-import pandas
-from pandas.plotting import scatter_matrix
-import matplotlib.pyplot as plt
+from pandas import DataFrame
+
+import datetime
+
 from sklearn import model_selection
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
@@ -11,9 +12,10 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
-import datetime
 
 import orizonDB
+# from HKT import learning
+
 
 def get_history(analysisDB, id_):
     sexo = analysisDB['sexo'][id_]
@@ -60,7 +62,7 @@ def get_history(analysisDB, id_):
         soma_carater += carater
 
     data = [sexo]+[idade//365]+[media]+[mediana]+soma_guias+[soma_carater]+soma_servicos
-    return pandas.DataFrame(data)
+    return DataFrame(data)
 
 def main():
     mainDB = orizonDB.get_DB()
@@ -73,6 +75,7 @@ def main():
                         'data_item',
                         'senha',
                         'servico']
+    print("DB separada")
     analysisDB = mainDB[relevant_columns][:20000]
     size = analysisDB.shape[0]
     analysisDB["carater_atendimento"].replace(["URGENCIA", "ELETIVO"], [1, 0], inplace = True)
@@ -98,13 +101,17 @@ def main():
             else:
                 others.append(servico)
 
+    print("Dados organizados")
+
 
     tamanho_hot_encoding = len(classes) + int(bool(others))
     servico_hot_encoding = [str([1 if i == j else 0 for j in range(tamanho_hot_encoding)]) for i in range(tamanho_hot_encoding)]
     analysisDB["servico"].replace(classes, servico_hot_encoding[:tamanho_hot_encoding - 1], inplace = True)
     analysisDB["servico"].replace(others, servico_hot_encoding[-1], inplace = True)
 
-    lookout_histories = pandas.DataFrame(columns = ['id', 'history', 'output'])
+    print("Hot encoding feito")
+
+    lookout_histories = DataFrame(columns = ['id', 'history', 'output'])
     for i in range(len(analysisDB.values)):
         valor_servico = 0
         line = analysisDB.values[i]
@@ -122,9 +129,11 @@ def main():
             if lookout_histories.empty or id_beneficiario not in lookout_histories.values[0]:
                 history = get_history(analysisDB, id_beneficiario)
                 history[valor_servico] = 0
-                line = pandas.DataFrame([[id, history, valor_servico]], columns = ['id', 'history', 'output'])
+                line = DataFrame([[id, history, valor_servico]], columns = ['id', 'history', 'output'])
                 lookout_histories.append(line)
 
     lookout_histories.sort_values('id')
+    print("DB preparada, entrando no ML")
+    learning(lookout_histories)
 
 main()

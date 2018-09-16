@@ -1,4 +1,4 @@
-import pandas
+from pandas import read_csv
 
 def get_DB():
     url = "hackaturing.dsv"
@@ -26,7 +26,7 @@ def get_DB():
             'base_hackaturing.valor_pago': float,
             'base_hackaturing.ano_mes': str,
             'base_hackaturing.cid': str}
-    dataset = pandas.read_csv(url, sep = '|', dtype = dtype)
+    dataset = read_csv(url, sep = '|', dtype = dtype)
     new_columns = [old_name[17:] for old_name in dataset.columns]
     dataset.columns = new_columns
     return dataset
