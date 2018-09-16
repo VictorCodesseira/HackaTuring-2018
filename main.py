@@ -121,10 +121,10 @@ def main():
         valor_servico = 0
         line = analysisDB.values[i]
         servico = [value.strip('[,]') for value in line[7].split(' ')]
-        for i in range(len(servico)):
-            v = servico[i]
+        for j in range(len(servico)):
+            v = servico[j]
             if v == '1':
-                valor_servico = i
+                valor_servico = j
 
         carater_atendimento = line[0]
         valor_item = line[1]
